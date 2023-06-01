@@ -6,7 +6,6 @@ from torchvision import datasets, transforms
 import os
 import os.path
 
-
 TRANSFORM = transforms.Compose([
         transforms.Grayscale(num_output_channels=1),
         transforms.ToTensor(),
@@ -68,8 +67,8 @@ def get_name(tmp_dir, img_dir, spaces):
     model = char_model()
     if not len(os.listdir(img_dir)):
         return
-    test_data = datasets.ImageFolder(tmp_dir, transform=TRANSFORM)
 
+    test_data = datasets.ImageFolder(tmp_dir, transform=TRANSFORM)
     out = ""
     for images, labels in test_data:
         images = images.unsqueeze(0)
