@@ -74,6 +74,41 @@ def to_closed(img: np.ndarray) -> np.ndarray:
     return img
 
 
+def thicken_lines(img: np.ndarray) -> np.ndarray:
+    """
+    Thicken the lines of an inverted, grayscale image.
+
+    :param img: Grayscale, inverted image to thicken.
+    :return: img after its lines are thickened.
+    """
+    # Thicken lines
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    return cv2.dilate(img, kernel, iterations=2)
+
+
+def get_lines(img: np.ndarray, kernel_length: int = 50) -> np.ndarray:
+    """
+    Get an image containing only horizontal and vertical lines in the input image.
+
+    :param img: Grayscale, inverted image to get lines from.
+    :param kernel_length: Length of horizontal and vertical kernels. It is recommended
+                          to keep this value at its default value.
+    :return: Image containing only horizontal and vertical lines from the original image.
+    """
+    # Create structuring elements (kernels)
+    vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, kernel_length))
+    horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_length, 1))
+
+    # Apply kernels to get vertical and horizontal masks
+    # These masks contain only vertical and horizontal lines, respectively
+    vertical_mask = cv2.morphologyEx(img, cv2.MORPH_OPEN, vertical_kernel, iterations=1)
+    horizontal_mask = cv2.morphologyEx(img, cv2.MORPH_OPEN, horizontal_kernel, iterations=1)
+
+    # Add masks together to get new mask containing both horizontal and vertical lines
+    img_mask = cv2.bitwise_or(horizontal_mask, vertical_mask)
+    return img_mask
+
+
 def get_best_shift(img):
     """
     Finds x and y units to shift the image by so it is centered.

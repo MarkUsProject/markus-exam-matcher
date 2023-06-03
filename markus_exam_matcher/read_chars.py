@@ -3,8 +3,9 @@ import sys
 import numpy as np
 import tempfile
 from cnn import get_num
-from typing import List, Tuple, Callable
-from image_transformations import ImageTransform, to_grayscale, to_inverted, to_closed, process_num
+from typing import List, Tuple
+from image_transformations import ImageTransform, to_grayscale, to_inverted, to_closed, thicken_lines,\
+    process_num, get_lines
 
 # TODO: Refactor anything that says digit to character because we will be using chars too.
 
@@ -13,13 +14,18 @@ from image_transformations import ImageTransform, to_grayscale, to_inverted, to_
 # ==================================================================
 
 # Image transformation pipelines
-CONTOUR_DETECTION_PIPELINE = ImageTransform([
+PREPROCESSING_PIPELINE = ImageTransform([
     to_grayscale,
     to_inverted,
     to_closed
 ])
 
-MNIST_PIPELINE_NUM = ImageTransform([
+BOX_DETECTION_PIPELINE = ImageTransform([
+    get_lines,
+    thicken_lines
+])
+
+MNIST_NUM_PIPELINE = ImageTransform([
     process_num
 ])
 
@@ -27,12 +33,38 @@ MNIST_PIPELINE_NUM = ImageTransform([
 # ==================================================================
 # Functions
 # ==================================================================
-def get_digit_box_contours_approx(contours: List[np.ndarray]) -> List[np.ndarray]:
+def is_empty_box(box: np.ndarray, width: int, height: int,
+                 threshold: float = 0.001) -> bool:
     """
-    Get contours representing the boxes that surround each digit. Will likely
-    add contours that should not be included.
+    Given a box, return whether it is empty.
 
-    :param contours: Contours of the original image.
+    :param box: Grayscale, inverted image representing a valid
+                box for students to write in.
+    :param width: Width of the box.
+    :param height: Height of the box.
+    :param threshold: Threshold for when normalized number of markings
+                      in box causes the box to be considered empty.
+    :return: Whether the given box is empty.
+    """
+    if width == 0 or height == 0:
+        return True
+
+    # Get number of markings in box
+    markings = cv2.countNonZero(box)
+
+    # Normalize
+    normalized = markings / float(width*height)
+
+    # Return whether this normalized amount is considered empty
+    return normalized < threshold
+
+
+def get_digit_box_contours(contours: List[np.ndarray]) -> List[np.ndarray]:
+    """
+    Get contours representing the boxes that surround each digit.
+
+    :param contours: Contours of the version of the original image
+                     containing only horizontal and vertical lines.
     :return: List containing box contours.
     """
     epsilon = 0.1
@@ -46,8 +78,8 @@ def get_digit_box_contours_approx(contours: List[np.ndarray]) -> List[np.ndarray
         # For squares, want width / height to be 1
         square_error = abs((float(w) / h) - 1)
 
-        # If the bounding rectangle is approximately a square, add the contour
-        # to box_contours
+        # If the bounding rectangle is approximately a square, add it
+        # to the list of contours.
         if square_error < epsilon:
             box_contours.append(contour)
 
@@ -80,15 +112,6 @@ def sort_contours(contours: List[np.ndarray], debug: bool = False) -> List[np.nd
     return sorted_contours
 
 
-# TODO: Use modified Z-score and document
-def _reject_outliers(data, m=100.):
-    d = np.abs(data - np.median(data))
-    mdev = np.median(d)
-    s = d / mdev if mdev else np.zeros(len(d))
-    data[s >= m] = -1  # Replace outliers with -1
-    return data
-
-
 def remove_erroneous_box_contours(box_contours: List[np.ndarray]) -> List[np.ndarray]:
     """
     Remove any box contours that should not be in the list of box contours.
@@ -112,12 +135,6 @@ def remove_erroneous_box_contours(box_contours: List[np.ndarray]) -> List[np.nda
         else:
             filtered_box_contours.append(contour)
             furthest_x = x + w
-
-    # Next remove outliers based on pixel area
-    box_contour_areas = np.array([cv2.contourArea(cnt) for cnt in filtered_box_contours])
-    areas_without_outliers = _reject_outliers(box_contour_areas)
-    filtered_box_contours = [filtered_box_contours[i] for i in range(len(areas_without_outliers))
-                             if areas_without_outliers[i] != -1]
 
     return filtered_box_contours
 
@@ -144,13 +161,18 @@ def get_digits(img: np.ndarray, filtered_contours: List[np.ndarray],
         # TODO: This is slightly crude. Could replace with contour detection to crop edges of boxes.
         number_image = img[y + buf:y + h - buf, x + buf:x + w - buf].copy()
 
+        # If the box is empty, skip it.
+        # TODO: For letter detection, may have spaces in name. Need to record space here.
+        if is_empty_box(number_image, width=w, height=h):
+            continue
+
         if verbose:
             _display_contour(img, contour)
             _display_img(number_image)
 
         # Transform digit to look similar to digits that the CNN was trained on
         # (MNIST digits)
-        number_image = MNIST_PIPELINE_NUM.perform_on(number_image)
+        number_image = MNIST_NUM_PIPELINE.perform_on(number_image)
 
         digits.append(number_image)
 
@@ -207,31 +229,38 @@ def _display_contour(img: np.ndarray, cnt: np.ndarray,
 
 if __name__ == '__main__':
     input_filename = sys.argv[1]
-    debug = False
+    debug = True
 
     # Read input image
     img = cv2.imread(input_filename)
 
-    # Perform image transformation pipeline on img to prepare image for contour
-    # detection
-    img = CONTOUR_DETECTION_PIPELINE.perform_on(img)
+    # Perform image pre-processing pipeline on img to get img in the
+    # form required by most image processing functions.
+    img = PREPROCESSING_PIPELINE.perform_on(img)
 
     if debug:
         _display_img(img)
 
-    # Get contours
-    contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    # Get an image containing only horizontal and vertical lines of img
+    lines_of_img = BOX_DETECTION_PIPELINE.perform_on(img)
 
-    # Only get contours that represent valid boxes where students write (approx)
-    filtered_contours = get_digit_box_contours_approx(contours)
+    if debug:
+        _display_img(lines_of_img)
+
+    # Get contours
+    contours, _ = cv2.findContours(lines_of_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+    # Only get contours that represent valid boxes where students write
+    filtered_contours = get_digit_box_contours(contours)
 
     # Sort contours in left-to-right order
     sorted_contours = sort_contours(filtered_contours, debug=debug)
 
-    # Remove erroneous box contours
+    # Remove potential erroneous box contours
     sorted_contours = remove_erroneous_box_contours(sorted_contours)
 
     # Get digits in order using these sorted boxes contours
+    # TODO: Move MNIST processing outside of this function for SRP
     digits = get_digits(img, sorted_contours, verbose=debug)
 
     # Write digits to a temporary directory and run CNN on images
