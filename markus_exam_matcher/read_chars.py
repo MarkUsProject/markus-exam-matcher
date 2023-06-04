@@ -1,341 +1,271 @@
 import cv2
-import glob
-import math
-import os
 import sys
-import tempfile
 import numpy as np
-from PIL import Image
-from scipy import ndimage
-from cnn import get_num, get_name
+import tempfile
+from cnn import get_num
+from typing import List, Tuple
+from image_transformations import ImageTransform, to_grayscale, to_inverted, to_closed, thicken_lines,\
+    process_num, get_lines
+
+# TODO: Refactor anything that says digit to character because we will be using chars too.
+
+# ==================================================================
+# Global variables
+# ==================================================================
+
+# Image transformation pipelines
+PREPROCESSING_PIPELINE = ImageTransform([
+    to_grayscale,
+    to_inverted,
+    to_closed
+])
+
+BOX_DETECTION_PIPELINE = ImageTransform([
+    get_lines,
+    thicken_lines
+])
+
+MNIST_NUM_PIPELINE = ImageTransform([
+    process_num
+])
 
 
-BUF = 5
-
-# Maximum number of filled points at which a character box is considered empty
-EMPTY_SPACE_TOLERANCE = 10
-
-
-def gap_left(hist, x, th, K=10):
+# ==================================================================
+# Functions
+# ==================================================================
+def is_empty_box(box: np.ndarray, width: int, height: int,
+                 threshold: float = 0.001) -> bool:
     """
-    Checks if this x-coordinate marks the start of a new word/block.
-    :param hist: distribution of pixels.
-    :param x: x-coordinate.
-    :param th: threshold value.
-    :param K: number of columns of empty pixels to consider as new word/block.
-    :return: whether this x-coordinate marks the start of a new word/block.
+    Given a box, return whether it is empty.
+
+    :param box: Grayscale, inverted image representing a valid
+                box for students to write in.
+    :param width: Width of the box.
+    :param height: Height of the box.
+    :param threshold: Threshold for when normalized number of markings
+                      in box causes the box to be considered empty.
+    :return: Whether the given box is empty.
     """
-    gap = hist[x+1] > th
-    for i in range(K):
-        if x - i < 0:
-            break
-        gap = gap and (i > x or hist[x-i] <= th)
-    return gap
+    if width == 0 or height == 0:
+        return True
+
+    # Get number of markings in box
+    markings = cv2.countNonZero(box)
+
+    # Normalize
+    normalized = markings / float(width*height)
+
+    # Return whether this normalized amount is considered empty
+    return normalized < threshold
 
 
-def gap_right(hist, x, th, W, K=10):
+def get_digit_box_contours(contours: List[np.ndarray]) -> List[np.ndarray]:
     """
-    Checks if this x-coordinate marks the end of a word/block.
-    :param hist: distribution of pixels.
-    :param x: x-coordinate.
-    :param th: threshold value.
-    :param K: number of columns of empty pixels to consider as new word/block.
-    :return: whether this x-coordinate marks the end of a word/block.
-    """
-    gap = hist[x-1] > th
-    for i in range(K):
-        if x + i > W:
-            break
-        gap = gap and (x+i >= len(hist) or hist[x+i] <= th)
-    return gap
+    Get contours representing the boxes that surround each digit.
 
-
-def straighten(img):
+    :param contours: Contours of the version of the original image
+                     containing only horizontal and vertical lines.
+    :return: List containing box contours.
     """
-    Deskews the input image based on the largest contour.
-    :param img: input image.
-    :return: deskewed image.
-    """
-    contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    epsilon = 0.1
+    box_contours = []
 
-    max_area = 0
-    max_contour = None
     for contour in contours:
-        area = cv2.contourArea(contour)
-        if area > max_area:
-            max_area = area
-            max_contour = contour
+        # Get the dimensions of the bounding rectangle for this contour
+        x, y, w, h = cv2.boundingRect(contour)
 
-    rect = cv2.minAreaRect(max_contour)
-    angle = rect[2]
+        # Error of ratio of width and height of shape being a square.
+        # For squares, want width / height to be 1
+        square_error = abs((float(w) / h) - 1)
 
-    if angle < -45:
-        angle = (90 + angle)
+        # If the bounding rectangle is approximately a square, add it
+        # to the list of contours.
+        if square_error < epsilon:
+            box_contours.append(contour)
 
-    # rotate the image to deskew it
-    (h, w) = img.shape[:2]
-    center = (w // 2, h // 2)
-    M = cv2.getRotationMatrix2D(center, angle, 1.0)
-    rotated = cv2.warpAffine(threshed, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-    return rotated
+    return box_contours
 
 
-def sort_contours(cnts):
+def sort_contours(contours: List[np.ndarray], debug: bool = False) -> List[np.ndarray]:
     """
-    Sorts the contours in left-to-right order (based on x coordinate).
-    :param cnts: list of contours.
-    :return: sorted contours.
+    Sort contours in the left-to-right order in which they appear.
+
+    :param contours: List of contours to sort.
+    :param debug: Specifies whether assertions should be checked.
+    :return: contours in sorted (left-to-right) order.
     """
-    # construct the list of bounding boxes and sort them from top to bottom
-    bounding_boxes = [cv2.boundingRect(c) for c in cnts]
-    (cnts, bounding_boxes) = zip(*sorted(zip(cnts, bounding_boxes), key=lambda b: b[1][0]))
-    return (cnts, bounding_boxes)
+    # Get the indices of the contours in the correct order
+    sorted_indices = np.argsort([cv2.boundingRect(i)[0] for i in contours])
+
+    # Create list of contours in the sorted order
+    sorted_contours = [None] * len(sorted_indices)
+    i = 0
+    for index in sorted_indices:
+        cnt = contours[index]
+        sorted_contours[i] = cnt
+        i += 1
+
+    if debug:
+        for cnt in sorted_contours:
+            assert cnt is not None
+
+    return sorted_contours
 
 
-def get_best_shift(img):
+def remove_erroneous_box_contours(box_contours: List[np.ndarray]) -> List[np.ndarray]:
     """
-    Finds x and y units to shift the image by so it is centered.
-    :param img: input image.
-    :return: best x and y units to shift by.
+    Remove any box contours that should not be in the list of box contours.
+
+    :param box_contours: List of box contours that might contain some contours
+                         that are not boxes.
+    :return: List of contours that are only box contours.
+
+    Preconditions:
+        - box_contours is sorted in left-to-right order.
     """
-    cy,cx = ndimage.measurements.center_of_mass(img)
+    filtered_box_contours = []
 
-    rows,cols = img.shape
-    shiftx = np.round(cols/2.0-cx).astype(int)
-    shifty = np.round(rows/2.0-cy).astype(int)
+    # First remove contours that are embedded in another contour
+    furthest_x = 0
+    for contour in box_contours:
+        x, y, w, h = cv2.boundingRect(contour)
 
-    return shiftx, shifty
-
-
-def shift(img,sx,sy):
-    """
-    Shifts the image by the given x and y units.
-    :param img: input image.
-    :param sx: x units to shift by.
-    :param sy: y units to shift by.
-    :return: shifted image.
-    """
-    rows, cols = img.shape
-    M = np.float32([[1, 0, sx], [0, 1, sy]])
-    shifted = cv2.warpAffine(img, M, (cols, rows))
-    return shifted
-
-
-def process_num(gray):
-    """
-    Process an input image of a handwritten number in the same way the MNIST dataset was processed.
-    :param gray: the input grayscaled image.
-    :return: the processed image.
-    """
-    gray = cv2.resize(gray, (28, 28))
-    # strip away empty rows and columns from all sides
-    while np.sum(gray[0]) == 0:
-        gray = gray[1:]
-    while np.sum(gray[:, 0]) == 0:
-        gray = np.delete(gray, 0, 1)
-    while np.sum(gray[-1]) == 0:
-        gray = gray[:-1]
-    while np.sum(gray[:, -1]) == 0:
-        gray = np.delete(gray, -1, 1)
-
-    # reshape image to be 20x20
-    rows, cols = gray.shape
-    if rows > cols:
-        factor = 20.0 / rows
-        rows = 20
-        cols = int(round(cols * factor))
-    else:
-        factor = 20.0 / cols
-        cols = 20
-        rows = int(round(rows * factor))
-    gray = cv2.resize(gray, (cols, rows))
-
-    # pad the image to be 28x28
-    colsPadding = (int(math.ceil((28 - cols) / 2.0)), int(math.floor((28 - cols) / 2.0)))
-    rowsPadding = (int(math.ceil((28 - rows) / 2.0)), int(math.floor((28 - rows) / 2.0)))
-    gray = np.pad(gray, (rowsPadding, colsPadding), 'constant')
-
-    # shift the image is the written number is centered
-    shiftx, shifty = get_best_shift(gray)
-    gray = shift(gray, shiftx, shifty)
-    return gray
-
-
-def process_char(gray):
-    """
-    Process an input image of a handwritten character in the same way the EMNIST dataset was processed.
-    :param gray: the input grayscaled image.
-    :return: the processed image.
-    """
-    gray = cv2.resize(gray, (128, 128))
-    # thicken the lines in the image
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    gray = cv2.dilate(gray, kernel, iterations=2)
-    gray = cv2.erode(gray, kernel, iterations=1)
-
-    gray = cv2.GaussianBlur(gray, (0, 0), 1)
-    # strip away empty rows and columns from all sides
-    while np.sum(gray[0]) == 0:
-        gray = gray[1:]
-    while np.sum(gray[:, 0]) == 0:
-        gray = np.delete(gray, 0, 1)
-    while np.sum(gray[-1]) == 0:
-        gray = gray[:-1]
-    while np.sum(gray[:, -1]) == 0:
-        gray = np.delete(gray, -1, 1)
-
-    # shift the image is the written character is centered
-    shiftx, shifty = get_best_shift(gray)
-    gray = shift(gray, shiftx, shifty)
-
-    # reshape image to be 24x24 and pad with black pixels on all sides to get 28x28 output
-    rows, cols = gray.shape
-    pad = 2
-    if rows > cols:
-        length = rows
-        rowsPadding = (pad, pad)
-        colsPadding = (length - cols + pad, length - cols + pad)
-    else:
-        length = cols
-        colsPadding = (pad, pad)
-        rowsPadding = (length - rows + pad, length - rows + pad)
-    gray = np.pad(gray, (rowsPadding, colsPadding), 'constant')
-    gray = cv2.resize(gray, (28, 28))
-    return gray
-
-
-def find_boxes(img):
-    """
-    Detects box(square) shapes in the input image.
-    :param img: input image.
-    :return: image with outlines of boxes from the original image.
-    """
-    kernel_length = np.array(img).shape[1] // 75
-    verticle_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, kernel_length))
-    hori_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_length, 1))
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-
-    # Detect vertical and horizontal lines in the image
-    img_temp1 = cv2.erode(img, verticle_kernel, iterations=2)
-    verticle_lines_img = cv2.dilate(img_temp1, verticle_kernel, iterations=2)
-    img_temp2 = cv2.erode(img, hori_kernel, iterations=2)
-    horizontal_lines_img = cv2.dilate(img_temp2, hori_kernel, iterations=2)
-
-    # Weighting parameters, this will decide the quantity of an image to be added to make a new image.
-    alpha = 0.5
-    beta = 1.0 - alpha
-    # Add the vertical and horizontal lines images to get a third image as summation.
-    img_final_bin = cv2.addWeighted(verticle_lines_img, alpha, horizontal_lines_img, beta, 0.0)
-    img_final_bin = cv2.erode(~img_final_bin, kernel, iterations=2)
-    (_, img_final_bin) = cv2.threshold(img_final_bin, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    return img_final_bin
-
-
-def extract_char(img, crop_dir, num=True):
-    """
-    Takes a block of handwritten characters and prints the recognized output.
-    :param img: input image of block of handwritten characters.
-    :param num: if the characters are numeric.
-    :return: a list of indices of where the spaces occur in the input.
-    """
-    img_final_bin = find_boxes(img)
-
-    # Find contours for image, which should detect all the boxes
-    contours, hierarchy = cv2.findContours(img_final_bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    (contours, boundingBoxes) = sort_contours(contours)
-
-    # Find the convex hull of each contour to get the correct outline of the box/square
-    new_contours = []
-    for k in range(len(contours)):
-        new_contours.append(cv2.convexHull(contours[k], returnPoints=True))
-
-    box_num = 0
-    reached_x = 0
-    spaces = []
-
-    for c in new_contours:
-        x, y, w, h = cv2.boundingRect(c)
-        # check if box's edges are less than half the height of image (not likely to be a box with handwritten char)
-        if w < np.array(img).shape[0] // 2 or h < np.array(img).shape[0] // 2:
+        if x + w < furthest_x:
             continue
-        # check if this is an inner contour who's area has already been covered by another contour
-        if x + w // 2 < reached_x:
+        else:
+            filtered_box_contours.append(contour)
+            furthest_x = x + w
+
+    return filtered_box_contours
+
+
+def get_digits(img: np.ndarray, filtered_contours: List[np.ndarray],
+               verbose: bool = False, buf: int = 5) -> List[np.ndarray]:
+    """
+    Get images of the individual digits in the given image using the contours
+    of the boxes around the images.
+
+    :param img: Image containing the boxes of digits.
+    :param filtered_contours: Contours of boxes of digits.
+    :param verbose: If true, displays contours and digits as they are detected.
+    :param buf: Pixels to be cropped off bounding box contours. Used to prevent
+                parts of the bounding box borders from being included in the
+                image.
+    :return: List of images of digits inside boxes (not including the boxes).
+    """
+    digits = []
+
+    for contour in filtered_contours:
+        # Get digit inside the box containing it
+        x, y, w, h = cv2.boundingRect(contour)
+        # TODO: This is slightly crude. Could replace with contour detection to crop edges of boxes.
+        number_image = img[y + buf:y + h - buf, x + buf:x + w - buf].copy()
+
+        # If the box is empty, skip it.
+        # TODO: For letter detection, may have spaces in name. Need to record space here.
+        if is_empty_box(number_image, width=w, height=h):
             continue
-        # check the contour has a square-like shape
-        if abs(w - h) < abs(min(0.5*w, 0.5*h)):
-            box_num += 1
-            cropped = img[y:y + h, x:x + w]
-            resized = cv2.resize(cropped, (28, 28))
 
-            # check if this is an empty box (space)
-            pts = cv2.findNonZero(resized)
-            if pts is None or len(pts) < EMPTY_SPACE_TOLERANCE:
-                spaces.append(box_num)
-                continue
+        if verbose:
+            _display_contour(img, contour)
+            _display_img(number_image)
 
-            if num:
-                new_img = process_num(cropped)
-            else:
-                new_img = process_char(cropped)
-            cv2.imwrite(crop_dir + '/' + str(box_num).zfill(2) + '.png', new_img)
-            reached_x = x + w
+        # Transform digit to look similar to digits that the CNN was trained on
+        # (MNIST digits)
+        number_image = MNIST_NUM_PIPELINE.perform_on(number_image)
 
-    return spaces
+        digits.append(number_image)
+
+        if verbose:
+            _display_img(number_image)
+
+    return digits
+
+
+def write_images_to_dir(imgs: List[np.ndarray], dir: str) -> None:
+    """
+    Write images to a directory.
+
+    :param imgs: List of images to write to directory.
+    :param dir: Directory to write the images to.
+    :return: None
+    """
+    for i in range(len(imgs)):
+        img = imgs[i]
+        # Write image to directory
+        cv2.imwrite(dir + '/' + str(i).zfill(2) + '.png', img)
+
+
+def _display_img(img: np.ndarray) -> None:
+    """
+    Display the image img. Useful for debugging.
+
+    :param img: Image to display.
+    :return: None
+    """
+    cv2.imshow("Image", img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+def _display_contour(img: np.ndarray, cnt: np.ndarray,
+                     colour: Tuple[int, int, int] = (0, 255, 0)) -> None:
+    """
+    Display the contour cnt overlaid onto a grayscale image img.
+
+    :param img: Grayscale image to overlay contour onto.
+    :param cnt: Contour to display.
+    :param colour: RGB tuple defining the colour of the contour.
+                   Defaults to green.
+    :return: None
+    """
+    # Display contour
+    img_color = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    cv2.drawContours(img_color, [cnt], 0, colour, 3)
+
+    # Display the image
+    _display_img(img_color)
 
 
 if __name__ == '__main__':
     input_filename = sys.argv[1]
-    # read input and covert to grayscale
+    debug = True
+
+    # Read input image
     img = cv2.imread(input_filename)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # invert image and thicken pixel lines
-    th, threshed = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV|cv2.THRESH_OTSU)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    threshed = cv2.dilate(threshed, kernel, iterations=3)
-    threshed = cv2.erode(threshed, kernel, iterations=3)
+    # Perform image pre-processing pipeline on img to get img in the
+    # form required by most image processing functions.
+    img = PREPROCESSING_PIPELINE.perform_on(img)
 
-    # deskew image
-    # TODO: review the straighten function, which currently (sometimes?) rotates to vertical
-    # instead of horizontal
-    # rotated = straighten(threshed)
-    rotated = threshed
+    if debug:
+        _display_img(img)
 
-    # find and draw the upper and lower boundary of each lines
-    hist = cv2.reduce(rotated, 1, cv2.REDUCE_AVG).reshape(-1)
+    # Get an image containing only horizontal and vertical lines of img
+    lines_of_img = BOX_DETECTION_PIPELINE.perform_on(img)
 
-    th = 2
-    H, W = img.shape[:2]
-    uppers = [y for y in range(H-1) if hist[y]<=th and hist[y+1]>th]
-    lowers = [y for y in range(H-1) if hist[y]>th and hist[y+1]<=th]
+    if debug:
+        _display_img(lines_of_img)
 
-    for i in range(min(len(uppers), len(lowers))):
-        # isolate each line of text
-        line = threshed[uppers[i]-BUF:lowers[i]+BUF, 0:W].copy()
+    # Get contours
+    contours, _ = cv2.findContours(lines_of_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
-        hist = cv2.reduce(line, 0, cv2.REDUCE_AVG).reshape(-1)
-        H, W = line.shape[:2]
-        lefts = [x for x in range(W-1) if gap_left(hist, x, th)]
-        rights = [x for x in range(W-1) if gap_right(hist, x, th, W)]
+    # Only get contours that represent valid boxes where students write
+    filtered_contours = get_digit_box_contours(contours)
 
-        line = rotated[uppers[i]-BUF:lowers[i]+BUF, 0:W].copy()
+    # Sort contours in left-to-right order
+    sorted_contours = sort_contours(filtered_contours, debug=debug)
 
-        # ensure first right coordinate is after first left coordinate
-        while lefts[0] > rights[0]:
-            rights.pop(0)
-        # go through each connected word/box
-        for j in range(min(len(lefts), len(rights))):
-            # look for connected boxes that contain handwritten characters
-            if rights[j] - lefts[j] > 5 * H:
-                word = line[0:H, lefts[j]-BUF:rights[j]+BUF].copy()
-                hist = cv2.reduce(word, 1, cv2.REDUCE_AVG).reshape(-1)
+    # Remove potential erroneous box contours
+    sorted_contours = remove_erroneous_box_contours(sorted_contours)
 
-                with tempfile.TemporaryDirectory() as tmp_dir:
-                    with tempfile.TemporaryDirectory(dir=tmp_dir) as img_dir:
-                        spaces = extract_char(word, img_dir, num=False)
-                        get_name(tmp_dir, img_dir, spaces)
+    # Get digits in order using these sorted boxes contours
+    # TODO: Move MNIST processing outside of this function for SRP
+    digits = get_digits(img, sorted_contours, verbose=debug)
 
-                with tempfile.TemporaryDirectory() as tmp_dir:
-                    with tempfile.TemporaryDirectory(dir=tmp_dir) as img_dir:
-                        spaces = extract_char(word, img_dir, num=True)
-                        get_num(tmp_dir, img_dir, spaces)
+    # Write digits to a temporary directory and run CNN on images
+    # in this directory
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        with tempfile.TemporaryDirectory(dir=tmp_dir) as img_dir:
+            write_images_to_dir(digits, img_dir)
+            get_num(tmp_dir, img_dir, [])
