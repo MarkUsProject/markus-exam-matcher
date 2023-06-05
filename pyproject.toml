@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "markus_exam_matcher"
+version = "0.0.1"
+authors = [
+  { name="Anis Singh", email="anisnylesingh@gmail.com" },
+    # TODO: Add other students information
+]
+maintainers = [
+    { name = "David Liu", email="david@cs.toronto.edu" }
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/MarkUsProject/markus-exam-matcher"
+"Bug Tracker" = "https://github.com/MarkUsProject/markus-exam-matcher/issues"

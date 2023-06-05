@@ -61,7 +61,7 @@ def get_num(tmp_dir, img_dir, spaces):
         pred = output.argmax(dim=1, keepdim=True)
         out += str(pred.data[0].item())
 
-    print(insert_spaces(out, spaces))
+    return insert_spaces(out, spaces)
 
 
 def get_name(tmp_dir, img_dir, spaces):
@@ -77,7 +77,7 @@ def get_name(tmp_dir, img_dir, spaces):
         pred = output.argmax(dim=1, keepdim=True)
         out += chr(pred.data[0].item() + 97)
 
-    print(insert_spaces(out, spaces).upper())
+    return insert_spaces(out, spaces).upper()
 
 
 def insert_spaces(out, spaces):
