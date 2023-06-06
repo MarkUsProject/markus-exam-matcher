@@ -1,13 +1,5 @@
 [build-system]
-requires = [
-    "hatchling",
-    "opencv-python-headless",
-    "torch",
-    "torchvision",
-    "Pillow",
-    "numpy",
-    "scipy"
-]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
@@ -20,7 +12,7 @@ authors = [
 maintainers = [
     { name = "David Liu", email="david@cs.toronto.edu" }
 ]
-description = "A small example package"
+description = "Used to detect handwritten characters on scanned exam papers."
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
