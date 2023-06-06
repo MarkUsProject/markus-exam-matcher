@@ -14,10 +14,10 @@ import numpy as np
 from typing import List
 import tempfile
 
-from src.markus_exam_matcher.core.char_types import CharType
+from ..core.char_types import CharType
 
 # TODO: Ask about convention for importing this
-from src.markus_exam_matcher._cnn.cnn import get_num
+from .._cnn.cnn import get_num
 
 
 # ==================================================================
