@@ -5,6 +5,15 @@ build-backend = "hatchling.build"
 [project]
 name = "markus_exam_matcher"
 version = "0.0.1"
+dependencies = [
+    "urllib3==1.26.6",
+    "opencv-python-headless~=4.7.0",
+    "torch==2.0.0",
+    "torchvision==0.15.1",
+    "Pillow==9.3.0",
+    "numpy==1.24.3",
+    "scipy==1.10.1"
+]
 authors = [
   { name="Anis Singh", email="anisnylesingh@gmail.com" },
     # TODO: Add other students information
