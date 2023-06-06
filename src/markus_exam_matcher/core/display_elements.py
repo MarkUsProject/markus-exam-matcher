@@ -1,3 +1,13 @@
+"""
+MarkUs Exam Matcher: Displaying Elements
+
+Information
+===============================
+This module defines functions that can be used to visually
+display images and contours overlaid on images. It is
+useful for debugging.
+"""
+
 import cv2
 import numpy as np
 from typing import Tuple

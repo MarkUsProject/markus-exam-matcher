@@ -13,7 +13,6 @@ the boxes in an input image.
 import cv2
 import numpy as np
 from typing import List
-
 from src.markus_exam_matcher.core.display_elements import display_contour, display_img
 
 

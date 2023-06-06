@@ -6,6 +6,7 @@ Information
 This module defines the types of characters that the MarkUs Exam
 Matcher could encounter.
 """
+
 from enum import Enum
 
 

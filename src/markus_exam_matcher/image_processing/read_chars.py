@@ -51,7 +51,7 @@ def interpret_char_images(imgs: List[np.ndarray], char_type: CharType) -> str:
             _write_images_to_dir(imgs, img_dir)
 
             if char_type == CharType.DIGIT:
-                return get_num(tmp_dir, img_dir, [])
+                return get_num(tmp_dir, img_dir)
             else:
                 # TODO: Implement reading letters
                 assert False
