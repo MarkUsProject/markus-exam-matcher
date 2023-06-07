@@ -8,6 +8,7 @@ characters from the boxes they are contained in, and to interpret
 these characters as strings.
 """
 
+# TODO: Create debug class and set debug modes for level of verbosity.
 
 import cv2
 import numpy as np
@@ -107,6 +108,9 @@ def run(img_path: str, char_type: CharType, debug: bool = False) -> str:
 
     for i in range(len(chars)):
         chars[i] = dataset_transform_pipeline.perform_on(chars[i])
+
+        if debug:
+            display_img(chars[i])
 
     # Write digits to a temporary directory and run CNN on images
     # in this directory

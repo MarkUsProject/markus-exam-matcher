@@ -74,9 +74,6 @@ def get_char_images(img: np.ndarray, box_contours: List[np.ndarray],
 
         chars.append(char_image)
 
-        if verbose:
-            display_img(char_image)
-
     return chars
 
 
