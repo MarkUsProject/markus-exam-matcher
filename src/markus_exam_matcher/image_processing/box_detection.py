@@ -54,24 +54,30 @@ def get_char_images(img: np.ndarray, box_contours: List[np.ndarray],
     Note: If the order of the characters is desired to be preserved, box_contours
           should be sorted in left-to-right order.
     """
-    digits = []
+    chars = []
 
     for contour in box_contours:
         # Get digit inside the box containing it
         x, y, w, h = cv2.boundingRect(contour)
         # TODO: This is slightly crude. Could replace with contour detection to crop edges of boxes.
-        number_image = img[y + buf:y + h - buf, x + buf:x + w - buf].copy()
+        char_image = img[y + buf:y + h - buf, x + buf:x + w - buf].copy()
+
+        # If the box is empty, skip it.
+        # TODO: Make sure we don't need to handle spaces. If we do, don't just continue here.
+        # TODO: If we don't, we should be able to break from the loop here.
+        if is_empty_box(char_image, width=w, height=h):
+            continue
 
         if verbose:
             display_contour(img, contour)
-            display_img(number_image)
+            display_img(char_image)
 
-        digits.append(number_image)
+        chars.append(char_image)
 
         if verbose:
-            display_img(number_image)
+            display_img(char_image)
 
-    return digits
+    return chars
 
 
 def is_empty_box(box: np.ndarray, width: int, height: int,

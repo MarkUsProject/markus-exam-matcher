@@ -15,7 +15,9 @@ from typing import List
 import tempfile
 
 from ..core.char_types import CharType
-
+from ..core.display_elements import display_img
+from ..image_processing import image_transformation_pipelines
+from ..image_processing.box_detection import get_box_contours, get_char_images
 # TODO: Ask about convention for importing this
 from .._cnn.cnn import get_num
 
@@ -31,7 +33,7 @@ def read_img(img_path: str) -> np.ndarray:
     return cv2.imread(img_path)
 
 
-def interpret_char_images(imgs: List[np.ndarray], char_type: CharType) -> str:
+def predict_chars_from_images(imgs: List[np.ndarray], char_type: CharType) -> str:
     """
     Return a string representing the characters written in imgs.
 
@@ -52,6 +54,63 @@ def interpret_char_images(imgs: List[np.ndarray], char_type: CharType) -> str:
             else:
                 # TODO: Implement reading letters
                 assert False
+
+
+def run(img_path: str, char_type: CharType, debug: bool = False) -> str:
+    """
+    Run the prediction algorithm on the image located at img_path.
+
+    :param img_path: Path to image to detect characters from.
+    :param char_type: Specifies whether the image contains digits or
+                      letters.
+    :param debug: Specifies whether to run the function in debug mode.
+                  Debug mode gives visuals of the algorithm at certain
+                  points and checks assertions.
+    :return: String representing the characters written in the image, in
+             left-to-right order.
+
+    Preconditions:
+        - img_path points to an image that has the characters to be detected
+          surrounded by boxes.
+    """
+    # Read input image
+    img = read_img(img_path)
+
+    # Perform image pre-processing pipeline on img to get img in the
+    # form required by most image processing functions.
+    img = image_transformation_pipelines.PREPROCESSING_PIPELINE.perform_on(img)
+
+    if debug:
+        display_img(img)
+
+    # Get an image containing only horizontal and vertical lines of img
+    lines_of_img = image_transformation_pipelines.BOX_DETECTION_PIPELINE.perform_on(img)
+
+    if debug:
+        display_img(lines_of_img)
+
+    # Get contours
+    contours, _ = cv2.findContours(lines_of_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+    # Only get contours that represent valid boxes where students write
+    box_contours = get_box_contours(contours, debug=debug)
+
+    # Get characters in order using these sorted boxes contours
+    chars = get_char_images(img, box_contours, verbose=debug)
+
+    # Transform images to look similar to images that the CNN was trained on
+    # ((E)MNIST)
+    if char_type == CharType.DIGIT:
+        dataset_transform_pipeline = image_transformation_pipelines.MNIST_NUM_PIPELINE
+    else:
+        dataset_transform_pipeline = image_transformation_pipelines.MNIST_LETTER_PIPELINE
+
+    for i in range(len(chars)):
+        chars[i] = dataset_transform_pipeline.perform_on(chars[i])
+
+    # Write digits to a temporary directory and run CNN on images
+    # in this directory
+    return predict_chars_from_images(chars, char_type)
 
 
 def _write_images_to_dir(imgs: List[np.ndarray], dir: str) -> None:
