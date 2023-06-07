@@ -20,9 +20,6 @@ from ..core.char_types import CharType
 from .._cnn.cnn import get_num
 
 
-# ==================================================================
-# Functions
-# ==================================================================
 def read_img(img_path: str) -> np.ndarray:
     """
     Read an input image.
