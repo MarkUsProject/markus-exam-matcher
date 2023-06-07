@@ -1,3 +1,13 @@
+"""
+MarkUs Exam Matcher: Image Transformations
+
+Information
+===============================
+This module defines functions that can be used to transform an image. It
+also defines a class that can be used as a pipeline to perform multiple
+transformations sequentially.
+"""
+
 import cv2
 from typing import Callable, List
 import numpy as np

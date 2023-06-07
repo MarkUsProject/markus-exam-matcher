@@ -1,18 +1,40 @@
 # MarkUs Exam Matcher
 
 ## Installation
+It is recommended to use a [virtual environment](https://docs.python.org/3/library/venv.html) to install this package, as it contains many pinned runtime dependencies.
 
-Install the Python dependencies (using a [virtual environment](https://docs.python.org/3/library/venv.html) is recommended).
-
-```console
-$ python -m pip install -r Requirements.txt
-```
-
-## Example usage
-
-There's a sample file in `examples/student_info.jpg`.
-Run the program on this example as follows:
+### Production Installation (Recommended)
+To install the production version of the package, run the following command in the console: 
 
 ```console
-$ python markus_exam_matcher/read_chars.py examples/student_info.jpg
+$ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git
 ```
+
+### Branch Installation
+To install the version specified by a particular branch (when permissions are granted), run the following command in the
+console:
+```console
+$ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git@branch_name
+```
+
+### Commit Hash Installation
+To install the version specified by a specific commit, the commit hash can be used by running the following command in
+the console:
+```console
+$ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git@commit_hash
+```
+## Usage
+This package works under the assumption that the characters to be detected are surrounded by boxes that are placed
+side-by-side. An example image with this format is displayed below:
+
+![Text](./examples/student_info_num.jpg?raw=true)
+
+Below is a sample used that generates a prediction from the file shown above, assuming it was titled `my_example.jpg`.
+```pycon
+>>> from markus_exam_matcher.image_processing import read_chars
+>>> from markus_exam_matcher.core import char_types
+>>> prediction = read_chars.run('./my_example.jpg', char_type=char_types.CharType.DIGIT, debug=False)
+>>> prediction
+'0001250981'
+```
+
