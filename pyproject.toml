@@ -7,7 +7,7 @@ name = "markus_exam_matcher"
 version = "0.0.1"
 dependencies = [
     "urllib3==1.26.6",
-    "opencv-python-headless~=4.7.0",
+    "opencv-python-headless==4.5.5.64",
     "torch==2.0.0",
     "torchvision==0.15.1",
     "Pillow==9.3.0",
