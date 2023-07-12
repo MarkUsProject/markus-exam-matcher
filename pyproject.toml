@@ -15,8 +15,8 @@ dependencies = [
     "scipy==1.10.1"
 ]
 authors = [
+  { name="Hannah Li", email="hannah.li97@gmail.com"},
   { name="Anis Singh", email="anisnylesingh@gmail.com" },
-    # TODO: Add other students information
 ]
 maintainers = [
     { name = "David Liu", email="david@cs.toronto.edu" }
