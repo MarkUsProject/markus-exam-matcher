@@ -79,8 +79,8 @@ def to_closed(img: np.ndarray) -> np.ndarray:
     :return: img after being closed.
     """
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    img = cv2.dilate(img, kernel, iterations=3)
-    img = cv2.erode(img, kernel, iterations=3)
+    img = cv2.dilate(img, kernel, iterations=2)
+    img = cv2.erode(img, kernel, iterations=2)
     return img
 
 
