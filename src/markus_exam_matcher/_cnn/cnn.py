@@ -60,7 +60,7 @@ def numeric_model():
     :return: CNN model for predicting numbers.
     """
     model = Net(10)
-    model.load_state_dict(torch.load(os.path.join(os.path.dirname(__file__), 'mnist_cnn.pt')))
+    model.load_state_dict(torch.load(os.path.join(os.path.dirname(__file__), 'model_numeric_epoch_24.pth')))
     return model
 
 
