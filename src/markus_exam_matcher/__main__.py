@@ -3,7 +3,7 @@ MarkUs Exam Matcher: __main__.py
 
 Information
 ===============================
-Environment for top-level code (entrypoint into package).
+Environment for top-level code (entry point into package).
 """
 import sys
 from .image_processing import read_chars
