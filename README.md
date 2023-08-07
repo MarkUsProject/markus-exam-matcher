@@ -4,7 +4,7 @@
 It is recommended to use a [virtual environment](https://docs.python.org/3/library/venv.html) to install this package, as it contains many pinned runtime dependencies.
 
 ### Production Installation (Recommended)
-To install the production version of the package, run the following command in the console: 
+To install the production version of the package, run the following command in the console:
 
 ```console
 $ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git
@@ -34,3 +34,10 @@ Below is a sample usage that generates a prediction from the file shown above, a
 $ python3 -m markus_exam_matcher ./my_example.jpg digit
 0001250981
 ```
+
+## Developers
+
+1. First, clone this repository.
+2. Open a terminal in this repo, and create a new [virtual environment](https://docs.python.org/3/library/venv.html).
+3. Run `pip install -e ".[dev]" to install the dependencies.
+4. Then run `pre-commit install`` to install the pre-commit hooks (for automatically formatting and checking your code on each commit).

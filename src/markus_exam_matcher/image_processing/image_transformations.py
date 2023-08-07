@@ -8,10 +8,11 @@ also defines a class that can be used as a pipeline to perform multiple
 transformations sequentially.
 """
 
-import cv2
-from typing import Callable, List
-import numpy as np
 import math
+from typing import Callable, List
+
+import cv2
+import numpy as np
 from scipy import ndimage
 
 
@@ -26,6 +27,7 @@ class ImageTransform:
                      one parameter (the np.ndarray image) and return only
                      an np.ndarray image.
     """
+
     callbacks: List[Callable]
 
     def __init__(self, callbacks: List[Callable]):
@@ -129,14 +131,14 @@ def get_best_shift(img):
     """
     cy, cx = ndimage.center_of_mass(img)
 
-    rows,cols = img.shape
-    shiftx = np.round(cols/2.0-cx).astype(int)
-    shifty = np.round(rows/2.0-cy).astype(int)
+    rows, cols = img.shape
+    shiftx = np.round(cols / 2.0 - cx).astype(int)
+    shifty = np.round(rows / 2.0 - cy).astype(int)
 
     return shiftx, shifty
 
 
-def shift(img,sx,sy):
+def shift(img, sx, sy):
     """
     Shifts the image by the given x and y units.
     :param img: input image.
@@ -187,7 +189,7 @@ def process_num(gray):
     # pad the image to be 28x28
     colsPadding = (int(math.ceil((28 - cols) / 2.0)), int(math.floor((28 - cols) / 2.0)))
     rowsPadding = (int(math.ceil((28 - rows) / 2.0)), int(math.floor((28 - rows) / 2.0)))
-    gray = np.pad(gray, (rowsPadding, colsPadding), 'constant')
+    gray = np.pad(gray, (rowsPadding, colsPadding), "constant")
 
     # shift the image is the written number is centered
     shiftx, shifty = get_best_shift(gray)

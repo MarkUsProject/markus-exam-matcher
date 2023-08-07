@@ -8,9 +8,10 @@ display images and contours overlaid on images. It is
 useful for debugging.
 """
 
+from typing import Tuple
+
 import cv2
 import numpy as np
-from typing import Tuple
 
 
 def display_img(img: np.ndarray) -> None:
@@ -25,8 +26,9 @@ def display_img(img: np.ndarray) -> None:
     cv2.destroyAllWindows()
 
 
-def display_contour(img: np.ndarray, cnt: np.ndarray,
-                    colour: Tuple[int, int, int] = (0, 255, 0)) -> None:
+def display_contour(
+    img: np.ndarray, cnt: np.ndarray, colour: Tuple[int, int, int] = (0, 255, 0)
+) -> None:
     """
     Display the contour cnt overlaid onto a grayscale image img.
 

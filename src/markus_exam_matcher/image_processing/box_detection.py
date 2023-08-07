@@ -10,9 +10,11 @@ the boxes in an input image.
 # TODO: Move sort_contours to a different module
 
 
+from typing import List
+
 import cv2
 import numpy as np
-from typing import List
+
 from ..core.display_elements import display_contour, display_img
 
 
@@ -37,8 +39,9 @@ def get_box_contours(contours: List[np.ndarray], debug: bool = False) -> List[np
     return sorted_contours
 
 
-def get_char_images(img: np.ndarray, box_contours: List[np.ndarray],
-                    verbose: bool = False, buf: int = 5) -> List[np.ndarray]:
+def get_char_images(
+    img: np.ndarray, box_contours: List[np.ndarray], verbose: bool = False, buf: int = 5
+) -> List[np.ndarray]:
     """
     Get images of the individual characters that are in the boxes outlined by
     box_contours.
@@ -60,7 +63,7 @@ def get_char_images(img: np.ndarray, box_contours: List[np.ndarray],
         # Get digit inside the box containing it
         x, y, w, h = cv2.boundingRect(contour)
         # TODO: This is slightly crude. Could replace with contour detection to crop edges of boxes.
-        char_image = img[y + buf:y + h - buf, x + buf:x + w - buf].copy()
+        char_image = img[y + buf : y + h - buf, x + buf : x + w - buf].copy()
 
         # If the box is empty, skip it.
         # TODO: Make sure we don't need to handle spaces. If we do, don't just continue here.
@@ -77,8 +80,7 @@ def get_char_images(img: np.ndarray, box_contours: List[np.ndarray],
     return chars
 
 
-def is_empty_box(box: np.ndarray, width: int, height: int,
-                 threshold: float = 0.001) -> bool:
+def is_empty_box(box: np.ndarray, width: int, height: int, threshold: float = 0.001) -> bool:
     """
     Given a box, return whether it is empty.
 
@@ -97,7 +99,7 @@ def is_empty_box(box: np.ndarray, width: int, height: int,
     markings = cv2.countNonZero(box)
 
     # Normalize
-    normalized = markings / float(width*height)
+    normalized = markings / float(width * height)
 
     # Return whether this normalized amount is considered empty
     return normalized < threshold

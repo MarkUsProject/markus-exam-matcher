@@ -10,17 +10,18 @@ these characters as strings.
 
 # TODO: Create debug class and set debug modes for level of verbosity.
 
+import tempfile
+from typing import List
+
 import cv2
 import numpy as np
-from typing import List
-import tempfile
 
+# TODO: Ask about convention for importing this
+from .._cnn.cnn import get_num
 from ..core.char_types import CharType
 from ..core.display_elements import display_img
 from ..image_processing import image_transformation_pipelines
 from ..image_processing.box_detection import get_box_contours, get_char_images
-# TODO: Ask about convention for importing this
-from .._cnn.cnn import get_num
 
 
 def read_img(img_path: str) -> np.ndarray:
@@ -128,4 +129,4 @@ def _write_images_to_dir(imgs: List[np.ndarray], dir: str) -> None:
     for i in range(len(imgs)):
         img = imgs[i]
         # Write image to directory
-        cv2.imwrite(dir + '/' + str(i).zfill(2) + '.png', img)
+        cv2.imwrite(dir + "/" + str(i).zfill(2) + ".png", img)
