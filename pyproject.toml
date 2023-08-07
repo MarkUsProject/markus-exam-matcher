@@ -4,7 +4,22 @@ build-backend = "hatchling.build"
 
 [project]
 name = "markus_exam_matcher"
-version = "0.0.4"
+version = "0.1.0"
+description = "A package for matching students to test papers in MarkUs"
+readme = "README.md"
+authors = [
+  { name="Hannah Li", email="hannah.li97@gmail.com"},
+  { name="Anis Singh", email="anisnylesingh@gmail.com" },
+]
+maintainers = [
+    { name = "David Liu", email="david@cs.toronto.edu" }
+]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "urllib3==1.26.6",
     "opencv-python==4.5.5.62",
@@ -13,21 +28,6 @@ dependencies = [
     "Pillow==9.3.0",
     "numpy==1.24.3",
     "scipy==1.10.1"
-]
-authors = [
-  { name="Hannah Li", email="hannah.li97@gmail.com"},
-  { name="Anis Singh", email="anisnylesingh@gmail.com" },
-]
-maintainers = [
-    { name = "David Liu", email="david@cs.toronto.edu" }
-]
-description = "Used to detect handwritten characters on scanned exam papers."
-readme = "README.md"
-requires-python = ">=3.7"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +39,15 @@ dev = [
 "Homepage" = "https://github.com/MarkUsProject/markus-exam-matcher"
 "Bug Tracker" = "https://github.com/MarkUsProject/markus-exam-matcher/issues"
 
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.github",
+  "/examples",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/markus_exam_matcher"]
 
 [tool.black]
 line-length = 100
