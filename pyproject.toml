@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "markus_exam_matcher"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
     "urllib3==1.26.6",
     "opencv-python==4.5.5.62",
