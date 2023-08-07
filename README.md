@@ -30,11 +30,7 @@ side-by-side. An example image with this format is displayed below:
 ![Text](./examples/student_info_num.jpg?raw=true)
 
 Below is a sample usage that generates a prediction from the file shown above, assuming it was titled `my_example.jpg`.
-```pycon
->>> from markus_exam_matcher.image_processing import read_chars
->>> from markus_exam_matcher.core import char_types
->>> prediction = read_chars.run('./my_example.jpg', char_type=char_types.CharType.DIGIT, debug=False)
->>> prediction
-'0001250981'
+```console
+$ python3 -m markus_exam_matcher ./my_example.jpg digit
+0001250981
 ```
-
