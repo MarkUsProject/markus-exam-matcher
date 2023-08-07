@@ -30,6 +30,21 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit"
+]
+
 [project.urls]
 "Homepage" = "https://github.com/MarkUsProject/markus-exam-matcher"
 "Bug Tracker" = "https://github.com/MarkUsProject/markus-exam-matcher/issues"
+
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3

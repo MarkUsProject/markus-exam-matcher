@@ -11,27 +11,31 @@ letters.
 """
 
 from __future__ import print_function
+
+import os
+import os.path
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms
-import os
-import os.path
-
 
 # Transformation pipeline to make images more similar to
 # (E)MNIST dataset format
-TRANSFORM = transforms.Compose([
+TRANSFORM = transforms.Compose(
+    [
         transforms.Grayscale(num_output_channels=1),
         transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
+        transforms.Normalize((0.1307,), (0.3081,)),
+    ]
+)
 
 
 class Net(nn.Module):
     """
     Neural network architecture for reading handwritten characters.
     """
+
     def __init__(self, num_output):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1, 20, 5, 1)
@@ -60,7 +64,9 @@ def numeric_model():
     :return: CNN model for predicting numbers.
     """
     model = Net(10)
-    model.load_state_dict(torch.load(os.path.join(os.path.dirname(__file__), 'model_numeric_epoch_24.pth')))
+    model.load_state_dict(
+        torch.load(os.path.join(os.path.dirname(__file__), "model_numeric_epoch_24.pth"))
+    )
     return model
 
 
@@ -71,7 +77,7 @@ def char_model():
     :return: CNN model for predicting letters.
     """
     model = Net(26)
-    model.load_state_dict(torch.load(os.path.join(os.path.dirname(__file__), 'emnist_cnn.pt')))
+    model.load_state_dict(torch.load(os.path.join(os.path.dirname(__file__), "emnist_cnn.pt")))
     return model
 
 
@@ -145,5 +151,5 @@ def _insert_spaces(out, spaces):
              spaces.
     """
     for s in spaces:
-        out = out[:s - 1] + " " + out[s - 1:]
+        out = out[: s - 1] + " " + out[s - 1 :]
     return out.strip()
