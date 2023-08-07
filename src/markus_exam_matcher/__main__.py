@@ -6,8 +6,8 @@ Information
 Environment for top-level code (entrypoint into package).
 """
 import sys
-from image_processing import read_chars
-from core.char_types import CharType
+from .image_processing import read_chars
+from .core.char_types import CharType
 from argparse import ArgumentParser
 
 
