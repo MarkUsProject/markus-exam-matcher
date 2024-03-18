@@ -6,6 +6,7 @@ Information
 This module defines pipelines that can be used to transform images
 into a certain form.
 """
+
 from .image_transformations import (
     ImageTransform,
     get_lines,
