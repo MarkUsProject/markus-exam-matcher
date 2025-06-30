@@ -1,3 +1,11 @@
+"""
+MarkUs Exam Matcher: Reading QR code
+
+Information
+===============================
+This module defines the function that reads the QR code.
+"""
+
 import sys
 
 import cv2
