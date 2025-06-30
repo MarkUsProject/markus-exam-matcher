@@ -28,13 +28,13 @@ def config_arg_parser() -> ArgumentParser:
 
     # Positional arguments
     parser.add_argument("image", type=str, help="Path to image to predict characters from.")
+
+    # Optional arguments
     parser.add_argument(
         "--char_type",
         choices=["digit", "letter"],
         help="Type of character to classify. Only digits and letters are supported.",
     )
-
-    # Optional arguments
     parser.add_argument(
         "-d",
         "--debug",
@@ -57,5 +57,5 @@ if __name__ == "__main__":
         pred = read_chars.run(args.image, char_type=char_type, debug=args.debug)
         print(pred)
     else:
-        scanned_result = scan_qr.run(args.image)
+        scanned_result = scan_qr.read_qr(args.image)
         print(scanned_result)

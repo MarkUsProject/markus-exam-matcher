@@ -1,5 +1,16 @@
-from ..qr_scan.scan_qr_code import scan_qr_code
+import sys
+
+import cv2
+import zxingcpp
 
 
-def run(img_path: str) -> str:
-    return scan_qr_code(img_path)
+def read_qr(img_path: str) -> str:
+    img = cv2.imread(img_path)
+    results = zxingcpp.read_barcodes(img)
+
+    if len(results) == 0:
+        print("Could not find any barcode.")
+        sys.exit(1)
+    else:
+        result = results[0]
+        return result.text
