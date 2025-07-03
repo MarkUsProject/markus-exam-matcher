@@ -56,6 +56,9 @@ if __name__ == "__main__":
         # Make prediction
         pred = read_chars.run(args.image, char_type=char_type, debug=args.debug)
         print(pred)
-    else:
+    elif args.scan_type == "qr":
         scanned_result = scan_qr.read_qr(args.image)
         print(scanned_result)
+    else:
+        print("Unknown scan type.")
+        sys.exit(1)
