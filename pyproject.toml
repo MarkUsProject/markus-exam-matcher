@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "numpy>=2.0.0,<2.3",  # Same as scipy dependency for numpy
-    "opencv-python==4.12.0.88",
+    "opencv-python-headless==4.12.0.88",
     "Pillow==11.3.0",
     "scipy==1.14.1",
     "torch==2.7.1",

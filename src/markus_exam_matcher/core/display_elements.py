@@ -6,6 +6,9 @@ Information
 This module defines functions that can be used to visually
 display images and contours overlaid on images. It is
 useful for debugging.
+
+NOTE: This module requires opencv-python to be installed
+instead of opencv-python-headless.
 """
 
 from typing import Tuple
