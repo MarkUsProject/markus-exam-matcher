@@ -7,21 +7,21 @@ It is recommended to use a [virtual environment](https://docs.python.org/3/libra
 To install the production version of the package, run the following command in the console:
 
 ```console
-$ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git
+$ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 ### Branch Installation
 To install the version specified by a particular branch (when permissions are granted), run the following command in the
 console:
 ```console
-$ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git@branch_name
+$ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git@branch_name --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 ### Commit Hash Installation
 To install the version specified by a specific commit, the commit hash can be used by running the following command in
 the console:
 ```console
-$ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git@commit_hash
+$ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git@commit_hash --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 ## Usage
 This package works under the assumption that the characters to be detected are surrounded by boxes that are placed
