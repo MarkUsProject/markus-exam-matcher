@@ -14,20 +14,19 @@ authors = [
 maintainers = [
     { name = "David Liu", email="david@cs.toronto.edu" }
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "urllib3==1.26.6",
-    "opencv-python==4.5.5.62",
-    "torch==2.0.0",
-    "torchvision==0.15.1",
-    "Pillow==9.3.0",
-    "numpy==1.24.3",
-    "scipy==1.10.1",
+    "numpy>=2.0.0,<2.3",  # Same as scipy dependency for numpy
+    "opencv-python==4.12.0.88",
+    "Pillow==11.3.0",
+    "scipy==1.14.1",
+    "torch==2.7.1",
+    "torchvision==0.22.1",
     "zxing-cpp==2.3.0"
 ]
 
