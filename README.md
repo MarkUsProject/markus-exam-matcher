@@ -29,9 +29,9 @@ side-by-side. An example image with this format is displayed below:
 
 ![Text](./examples/student_info_num.jpg?raw=true)
 
-Below is a sample usage that generates a prediction from the file shown above, assuming it was titled `my_example.jpg`.
+Below is a sample usage that generates a prediction from the file shown above.
 ```console
-$ python3 -m markus_exam_matcher ./my_example.jpg digit
+$ python3 -m markus_exam_matcher --char_type digit char examples/student_info_num.jpg
 0001250981
 ```
 
@@ -39,5 +39,5 @@ $ python3 -m markus_exam_matcher ./my_example.jpg digit
 
 1. First, clone this repository.
 2. Open a terminal in this repo, and create a new [virtual environment](https://docs.python.org/3/library/venv.html).
-3. Run `pip install -e ".[dev]" to install the dependencies.
-4. Then run `pre-commit install`` to install the pre-commit hooks (for automatically formatting and checking your code on each commit).
+3. Run `pip install -e ".[dev]"` to install the dependencies.
+4. Then run `pre-commit install` to install the pre-commit hooks (for automatically formatting and checking your code on each commit).
