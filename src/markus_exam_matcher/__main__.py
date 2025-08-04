@@ -65,8 +65,12 @@ if __name__ == "__main__":
         print(pred)
     elif args.scan_type == "qr":
         if args.bulk:
-            filenames = sys.stdin.read().split('\n')
-            paths = [os.path.join(args.path, filename.strip()) for filename in filenames if filename.strip()]
+            filenames = sys.stdin.read().split("\n")
+            paths = [
+                os.path.join(args.path, filename.strip())
+                for filename in filenames
+                if filename.strip()
+            ]
             scan_qr.scan_qr_codes_from_pdfs(paths)
         else:
             scanned_result = scan_qr.read_qr(args.path)

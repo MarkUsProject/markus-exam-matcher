@@ -11,9 +11,8 @@ import sys
 
 import cv2
 import numpy as np
-from pdf2image import convert_from_path
 import zxingcpp
-
+from pdf2image import convert_from_path
 
 
 def read_qr(img_path: str) -> str:
@@ -28,7 +27,6 @@ def read_qr(img_path: str) -> str:
         return result.text
 
 
-
 def scan_qr_codes_from_pdfs(paths: list[str], dpi: int = 400, top_fraction: float = 0.2) -> None:
     """Scan QR codes from the provided single-page PDFs, checking only the top portion of each page.
 
@@ -38,7 +36,9 @@ def scan_qr_codes_from_pdfs(paths: list[str], dpi: int = 400, top_fraction: floa
     for pdf_path in paths:
         pdf_filename = os.path.basename(pdf_path)
         try:
-            pages = convert_from_path(pdf_path, dpi=dpi, fmt='jpeg', single_file=True, grayscale=True)
+            pages = convert_from_path(
+                pdf_path, dpi=dpi, fmt="jpeg", single_file=True, grayscale=True
+            )
             page = pages[0]
             # Convert PIL image to OpenCV format
             cv_image = np.array(page)
@@ -52,9 +52,8 @@ def scan_qr_codes_from_pdfs(paths: list[str], dpi: int = 400, top_fraction: floa
             data, _, _ = detector.detectAndDecode(cropped)
 
             if data:
-                print(f"{pdf_filename},\"{data}\"")
+                print(f'{pdf_filename},"{data}"')
             else:
-                print(f"{pdf_filename},\"\"")
+                print(f'{pdf_filename},""')
         except Exception:
-            print(f"{pdf_filename},\"\"")
-
+            print(f'{pdf_filename},""')
