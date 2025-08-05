@@ -7,6 +7,14 @@ It is recommended to use a [virtual environment](https://docs.python.org/3/libra
 To install the production version of the package, run the following command in the console:
 
 ```console
+$ pip install markus-exam-matcher --extra-index-url https://download.pytorch.org/whl/cpu
+```
+
+### Latest Development Installation
+
+To install the latest development version of the package, run the following command in the console:
+
+```console
 $ pip install git+https://github.com/MarkUsProject/markus-exam-matcher.git --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
