@@ -18,10 +18,7 @@ from pdf2image import convert_from_path
 def read_qr(img_path: str) -> str:
     img = cv2.imread(img_path)
     result = zxingcpp.read_barcode(
-        img,
-        try_rotate=False,
-        try_downscale=False,
-        formats=zxingcpp.QRCode
+        img, try_rotate=False, try_downscale=False, formats=zxingcpp.QRCode
     )
 
     if result is None:
@@ -39,9 +36,7 @@ def scan_qr_codes_from_pdfs(paths: list[str], dpi: int = 150, top_fraction: floa
     for pdf_path in paths:
         pdf_filename = os.path.basename(pdf_path)
         try:
-            pages = convert_from_path(
-                pdf_path, dpi=dpi, fmt="jpeg", single_file=True
-            )
+            pages = convert_from_path(pdf_path, dpi=dpi, fmt="jpeg", single_file=True)
             page = pages[0]
 
             # Crop top fraction of the image
@@ -50,15 +45,11 @@ def scan_qr_codes_from_pdfs(paths: list[str], dpi: int = 150, top_fraction: floa
 
             # Detect and decode
             data = zxingcpp.read_barcode(
-                cropped,
-                try_rotate=False,
-                try_downscale=False,
-                formats=zxingcpp.QRCode
+                cropped, try_rotate=False, try_downscale=False, formats=zxingcpp.QRCode
             )
             if data:
-                print(f"{pdf_filename},\"{data.text}\"")
+                print(f'{pdf_filename},"{data.text}"')
             else:
                 print(f'{pdf_filename},""')
         except Exception:
             print(f'{pdf_filename},""')
-
