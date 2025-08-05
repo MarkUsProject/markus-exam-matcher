@@ -17,42 +17,38 @@ from pdf2image import convert_from_path
 
 def read_qr(img_path: str) -> str:
     img = cv2.imread(img_path)
-    results = zxingcpp.read_barcodes(img)
+    result = zxingcpp.read_barcode(
+        img, try_rotate=False, try_downscale=False, formats=zxingcpp.QRCode
+    )
 
-    if len(results) == 0:
+    if result is None:
         print("Could not find any barcode.", file=sys.stderr)
         sys.exit(1)
     else:
-        result = results[0]
         return result.text
 
 
-def scan_qr_codes_from_pdfs(paths: list[str], dpi: int = 400, top_fraction: float = 0.2) -> None:
+def scan_qr_codes_from_pdfs(paths: list[str], dpi: int = 150, top_fraction: float = 0.2) -> None:
     """Scan QR codes from the provided single-page PDFs, checking only the top portion of each page.
 
     Print the QR codes scanned from each page (one per page).
     """
-    detector = cv2.QRCodeDetector()
     for pdf_path in paths:
         pdf_filename = os.path.basename(pdf_path)
         try:
-            pages = convert_from_path(
-                pdf_path, dpi=dpi, fmt="jpeg", single_file=True, grayscale=True
-            )
+            pages = convert_from_path(pdf_path, dpi=dpi, fmt="jpeg", single_file=True)
             page = pages[0]
-            # Convert PIL image to OpenCV format
-            cv_image = np.array(page)
 
             # Crop top fraction of the image
-            height = cv_image.shape[0]
-            crop_height = int(height * top_fraction)
-            cropped = cv_image[:crop_height, :]
+            width, height = page.size
+            cropped = page.crop((0, 0, width, int(height * top_fraction)))
 
             # Detect and decode
-            data, _, _ = detector.detectAndDecode(cropped)
-
+            data = zxingcpp.read_barcode(
+                cropped, try_rotate=False, try_downscale=False, formats=zxingcpp.QRCode
+            )
             if data:
-                print(f'{pdf_filename},"{data}"')
+                print(f'{pdf_filename},"{data.text}"')
             else:
                 print(f'{pdf_filename},""')
         except Exception:
