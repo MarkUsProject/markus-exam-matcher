@@ -10,20 +10,20 @@ authors = [
 maintainers = [
     { name = "David Liu", email="david@cs.toronto.edu" }
 ]
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.11,<3.15"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "numpy>=2.0.0,<2.3",  # Same as scipy dependency for numpy
+    "numpy>=2.0.0,<2.5",  # Same as scipy dependency for numpy
     "opencv-python-headless==4.12.0.88",
     "pdf2image==1.17.0",
-    "Pillow==11.3.0",
-    "scipy==1.14.1",
-    "torch==2.7.1",
-    "torchvision==0.22.1",
+    "Pillow==12.0.0",
+    "scipy==1.16.3",
+    "torch==2.9.1",
+    "torchvision==0.24.1",
     "zxing-cpp==2.3.0"
 ]
 
@@ -44,7 +44,7 @@ build-backend = "uv_build"
 
 [tool.black]
 line-length = 100
-target-version = ['py310']
+target-version = ['py311']
 
 
 [tool.isort]
