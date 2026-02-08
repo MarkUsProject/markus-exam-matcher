@@ -8,34 +8,24 @@ characters from the boxes they are contained in, and to interpret
 these characters as strings.
 """
 
-# TODO: Create debug class and set debug modes for level of verbosity.
+from __future__ import annotations
 
+import os
 import tempfile
-from typing import List
 
 import cv2
 import numpy as np
 
-# TODO: Ask about convention for importing this
 from .._cnn.cnn import get_num
 from ..core.char_types import CharType
 from ..core.display_elements import display_img
 from ..image_processing import image_transformation_pipelines
 from ..image_processing.box_detection import get_box_contours, get_char_images
 
-
-def read_img(img_path: str) -> np.ndarray:
-    """
-    Read an input image.
-
-    :param img_path: Path to image.
-    :return: np.ndarray representing the image specified by
-             img_path.
-    """
-    return cv2.imread(img_path)
+# TODO: Create debug class and set debug modes for level of verbosity.
 
 
-def predict_chars_from_images(imgs: List[np.ndarray], char_type: CharType) -> str:
+def predict_chars_from_images(imgs: list[np.ndarray], char_type: CharType) -> str:
     """
     Return a string representing the characters written in imgs.
 
@@ -49,10 +39,11 @@ def predict_chars_from_images(imgs: List[np.ndarray], char_type: CharType) -> st
     # in this directory
     with tempfile.TemporaryDirectory() as tmp_dir:
         with tempfile.TemporaryDirectory(dir=tmp_dir) as img_dir:
-            _write_images_to_dir(imgs, img_dir)
+            for i, img in enumerate(imgs):
+                cv2.imwrite(os.path.join(img_dir, f"{i}.png"), img)
 
             if char_type == CharType.DIGIT:
-                return get_num(tmp_dir, img_dir)
+                return get_num(tmp_dir)
             else:
                 # TODO: Implement reading letters
                 assert False
@@ -76,7 +67,7 @@ def run(img_path: str, char_type: CharType, debug: bool = False) -> str:
           surrounded by boxes.
     """
     # Read input image
-    img = read_img(img_path)
+    img = cv2.imread(img_path)
 
     # Perform image pre-processing pipeline on img to get img in the
     # form required by most image processing functions.
@@ -96,9 +87,13 @@ def run(img_path: str, char_type: CharType, debug: bool = False) -> str:
 
     # Only get contours that represent valid boxes where students write
     box_contours = get_box_contours(contours, debug=debug)
+    if not box_contours:
+        return ""
 
     # Get characters in order using these sorted boxes contours
     chars = get_char_images(img, box_contours, verbose=debug)
+    if not chars:
+        return ""
 
     # Transform images to look similar to images that the CNN was trained on
     # ((E)MNIST)
@@ -116,17 +111,3 @@ def run(img_path: str, char_type: CharType, debug: bool = False) -> str:
     # Write digits to a temporary directory and run CNN on images
     # in this directory
     return predict_chars_from_images(chars, char_type)
-
-
-def _write_images_to_dir(imgs: List[np.ndarray], dir: str) -> None:
-    """
-    Write images to a directory.
-
-    :param imgs: List of images to write to directory.
-    :param dir: Directory to write the images to.
-    :return: None
-    """
-    for i in range(len(imgs)):
-        img = imgs[i]
-        # Write image to directory
-        cv2.imwrite(dir + "/" + str(i).zfill(2) + ".png", img)

@@ -7,18 +7,17 @@ This module defines the image processing functions pertaining to
 the boxes in an input image.
 """
 
-# TODO: Move sort_contours to a different module
-
-
-from typing import List
+from __future__ import annotations
 
 import cv2
 import numpy as np
 
 from ..core.display_elements import display_contour, display_img
 
+# TODO: Move sort_contours to a different module
 
-def get_box_contours(contours: List[np.ndarray], debug: bool = False) -> List[np.ndarray]:
+
+def get_box_contours(contours: list[np.ndarray], debug: bool = False) -> list[np.ndarray]:
     """
     Get contours representing the boxes that surround each character.
 
@@ -40,8 +39,8 @@ def get_box_contours(contours: List[np.ndarray], debug: bool = False) -> List[np
 
 
 def get_char_images(
-    img: np.ndarray, box_contours: List[np.ndarray], verbose: bool = False, buf: int = 5
-) -> List[np.ndarray]:
+    img: np.ndarray, box_contours: list[np.ndarray], verbose: bool = False, buf: int = 5
+) -> list[np.ndarray]:
     """
     Get images of the individual characters that are in the boxes outlined by
     box_contours.
@@ -105,7 +104,7 @@ def is_empty_box(box: np.ndarray, width: int, height: int, threshold: float = 0.
     return normalized < threshold
 
 
-def _get_box_contours(contours: List[np.ndarray]) -> List[np.ndarray]:
+def _get_box_contours(contours: list[np.ndarray]) -> list[np.ndarray]:
     """
     Get contours representing the boxes that surround each character.
 
@@ -132,7 +131,7 @@ def _get_box_contours(contours: List[np.ndarray]) -> List[np.ndarray]:
     return box_contours
 
 
-def _sort_contours(contours: List[np.ndarray], debug: bool = False) -> List[np.ndarray]:
+def _sort_contours(contours: list[np.ndarray], debug: bool = False) -> list[np.ndarray]:
     """
     Sort contours in the left-to-right order in which they appear.
 
@@ -158,7 +157,7 @@ def _sort_contours(contours: List[np.ndarray], debug: bool = False) -> List[np.n
     return sorted_contours
 
 
-def _remove_erroneous_box_contours(box_contours: List[np.ndarray]) -> List[np.ndarray]:
+def _remove_erroneous_box_contours(box_contours: list[np.ndarray]) -> list[np.ndarray]:
     """
     Remove any box contours that should not be in the list of box contours.
 
