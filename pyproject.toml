@@ -19,11 +19,10 @@ classifiers = [
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
 dependencies = [
-    "numpy>=2.0.0,<2.5",  # Same as scipy dependency for numpy
+    "numpy>=2.0.0,<2.5",
     "opencv-python-headless==4.12.0.88",
     "pdf2image==1.17.0",
     "Pillow==12.0.0",
-    "scipy==1.16.3",
     "torch==2.9.1",
     "torchvision==0.24.1",
     "zxing-cpp==2.3.0"
