@@ -8,8 +8,10 @@ also defines a class that can be used as a pipeline to perform multiple
 transformations sequentially.
 """
 
+from __future__ import annotations
+
 import math
-from typing import Callable, List
+from typing import Callable
 
 import cv2
 import numpy as np
@@ -27,12 +29,12 @@ class ImageTransform:
                      an np.ndarray image.
     """
 
-    callbacks: List[Callable]
+    callbacks: list[Callable]
 
-    def __init__(self, callbacks: List[Callable]):
+    def __init__(self, callbacks: list[Callable]) -> None:
         self.callbacks = callbacks
 
-    def perform_on(self, img):
+    def perform_on(self, img: np.ndarray) -> np.ndarray:
         """
         Perform the transformation specified by this instance. The transformations
         are called in the order specified by the callbacks list.
@@ -66,7 +68,16 @@ def to_inverted(img: np.ndarray) -> np.ndarray:
     :param img: Image to invert.
     :return: img after being inverted.
     """
-    _, threshed = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+    BLOCK_SIZE = 15
+    C = 2
+    threshed = cv2.adaptiveThreshold(
+        img,
+        maxValue=255,
+        adaptiveMethod=cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        thresholdType=cv2.THRESH_BINARY_INV,
+        blockSize=BLOCK_SIZE,
+        C=C,
+    )
     return threshed
 
 
@@ -79,9 +90,10 @@ def to_closed(img: np.ndarray) -> np.ndarray:
     :param img: Image to close.
     :return: img after being closed.
     """
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    img = cv2.dilate(img, kernel, iterations=2)
-    img = cv2.erode(img, kernel, iterations=2)
+    KERNEL_SIZE = (3, 3)
+    ITERATIONS = 2
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, KERNEL_SIZE)
+    img = cv2.morphologyEx(img, op=cv2.MORPH_CLOSE, kernel=kernel, iterations=ITERATIONS)
     return img
 
 
@@ -120,29 +132,7 @@ def get_lines(img: np.ndarray, kernel_length: int = 50) -> np.ndarray:
     return img_mask
 
 
-def get_best_shift(img):
-    """
-    Finds x and y units to shift the image by so it is centered.
-    :param img: input image.
-    :return: best x and y units to shift by.
-
-    Disclaimer: Function written by the authors at https://opensourc.es/blog/tensorflow-mnist/.
-    """
-    m = cv2.moments(img)
-    if m["m00"] == 0:
-        return 0, 0
-
-    cx = m["m10"] / m["m00"]
-    cy = m["m01"] / m["m00"]
-
-    rows, cols = img.shape
-    shiftx = np.round(cols / 2.0 - cx).astype(int)
-    shifty = np.round(rows / 2.0 - cy).astype(int)
-
-    return shiftx, shifty
-
-
-def shift(img, sx, sy):
+def shift(img: np.ndarray, sx: int, sy: int) -> np.ndarray:
     """
     Shifts the image by the given x and y units.
     :param img: input image.
@@ -158,7 +148,7 @@ def shift(img, sx, sy):
     return shifted
 
 
-def process_num(gray):
+def process_num(gray: np.ndarray) -> np.ndarray:
     """
     Process an input image of a handwritten number in the same way the MNIST dataset was processed.
     :param gray: the input grayscaled image.
@@ -166,17 +156,22 @@ def process_num(gray):
 
     Disclaimer: Function written by the authors at https://opensourc.es/blog/tensorflow-mnist/.
     """
-    gray = cv2.resize(gray, (28, 28))
+    # Crop to the largest contour
+    contours, _ = cv2.findContours(gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    largest_contour = max(contours, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(largest_contour)
+    gray = gray[y : y + h, x : x + w]
 
-    # strip away empty rows and columns from all sides
-    while np.sum(gray[0]) == 0:
-        gray = gray[1:]
-    while np.sum(gray[:, 0]) == 0:
-        gray = np.delete(gray, 0, 1)
-    while np.sum(gray[-1]) == 0:
-        gray = gray[:-1]
-    while np.sum(gray[:, -1]) == 0:
-        gray = np.delete(gray, -1, 1)
+    # Deskew
+    m = cv2.moments(gray)
+    rows, cols = gray.shape
+
+    if abs(m["mu02"]) >= 0.01:
+        skew = m["mu11"] / m["mu02"]
+        transform = np.float32([[1, skew, -0.5 * rows * skew], [0, 1, 0]])
+        gray = cv2.warpAffine(
+            gray, transform, (cols, rows), flags=cv2.WARP_INVERSE_MAP | cv2.INTER_LINEAR
+        )
 
     # reshape image to be 20x20
     rows, cols = gray.shape
@@ -196,6 +191,28 @@ def process_num(gray):
     gray = np.pad(gray, (rowsPadding, colsPadding), "constant")
 
     # shift the image is the written number is centered
-    shiftx, shifty = get_best_shift(gray)
+    shiftx, shifty = _get_best_shift(gray)
     gray = shift(gray, shiftx, shifty)
     return gray
+
+
+def _get_best_shift(img: np.ndarray) -> tuple[int, int]:
+    """
+    Finds x and y units to shift the image by so it is centered.
+    :param img: input image.
+    :return: best x and y units to shift by.
+
+    Disclaimer: Function written by the authors at https://opensourc.es/blog/tensorflow-mnist/.
+    """
+    m = cv2.moments(img)
+    if m["m00"] == 0:
+        return 0, 0
+
+    cx = m["m10"] / m["m00"]
+    cy = m["m01"] / m["m00"]
+
+    rows, cols = img.shape
+    shiftx = np.round(cols / 2.0 - cx).astype(int)
+    shifty = np.round(rows / 2.0 - cy).astype(int)
+
+    return shiftx, shifty

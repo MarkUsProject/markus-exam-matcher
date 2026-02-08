@@ -81,7 +81,7 @@ def char_model():
     return model
 
 
-def get_num(tmp_dir, img_dir):
+def get_num(tmp_dir: str) -> str:
     """
     Read a series of images from a directory and predict the
     digits in the images. The images should contain only digits.
@@ -92,16 +92,12 @@ def get_num(tmp_dir, img_dir):
     # Load numeric model
     model = numeric_model()
 
-    # Verify image directory exists
-    if not len(os.listdir(img_dir)):
-        return
-
     # Load data to test
     test_data = datasets.ImageFolder(tmp_dir, transform=TRANSFORM)
 
     # Generate predictions
     out = ""
-    for images, labels in test_data:
+    for images, _ in test_data:
         images = images.unsqueeze(0)
         output = model(images)
         pred = output.argmax(dim=1, keepdim=True)
@@ -131,7 +127,7 @@ def get_name(tmp_dir, img_dir, spaces):
 
     # Generate predictions
     out = ""
-    for images, labels in test_data:
+    for images, _ in test_data:
         images = images.unsqueeze(0)
         output = model(images)
         pred = output.argmax(dim=1, keepdim=True)
