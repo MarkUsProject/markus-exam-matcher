@@ -13,7 +13,6 @@ from typing import Callable, List
 
 import cv2
 import numpy as np
-from scipy import ndimage
 
 
 class ImageTransform:
@@ -129,7 +128,12 @@ def get_best_shift(img):
 
     Disclaimer: Function written by the authors at https://opensourc.es/blog/tensorflow-mnist/.
     """
-    cy, cx = ndimage.center_of_mass(img)
+    m = cv2.moments(img)
+    if m["m00"] == 0:
+        return 0, 0
+
+    cx = m["m10"] / m["m00"]
+    cy = m["m01"] / m["m00"]
 
     rows, cols = img.shape
     shiftx = np.round(cols / 2.0 - cx).astype(int)

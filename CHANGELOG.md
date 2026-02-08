@@ -4,6 +4,7 @@
 
 - Switched QR code scanning to scan full page and report orientation
 - Added second attempt for QR code scanning with higher default resolution, `try_rotate=True`, and `try_downscale=True`
+- Removed dependency on `scipy`
 
 ## [0.3.0]
 
