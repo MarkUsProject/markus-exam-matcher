@@ -1,6 +1,6 @@
 [project]
 name = "markus_exam_matcher"
-version = "0.3.0"
+version = "0.4.0"
 description = "A package for matching students to test papers in MarkUs"
 readme = "README.md"
 authors = [
